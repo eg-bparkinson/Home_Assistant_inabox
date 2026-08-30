@@ -346,8 +346,11 @@ sed -i "s#<mac address='.*'/>#<mac address='$MAC'/>#" "$XML"
 # set the bridge name with the value of $BRNAME
 sed -i "s#<source bridge='XXX'/>#<source bridge='$BRNAME'/>#" "$XML"
 
-# check for vhostX network source and change network block to suit
-if [[ $BRNAME =~ ^vhost[0-9]+$ ]]; then
+# A real bridge device (br0, virbr0, ...) works with type='bridge', but a raw NIC or
+# bond (eth0, bond0, vhost0, ...) can't be enslaved as a bridge port by the kernel, so it
+# needs a macvtap "direct" interface instead. This mirrors the same check Unraid's own VM
+# manager uses (webgui's libvirt.php: bridge-like name -> type='bridge', else -> type='direct').
+if [[ ! $BRNAME =~ ^(vir)?br ]]; then
     sed -i "s#<interface type='bridge'>#<interface type='direct' trustGuestRxFilters='yes'>#" "$XML"
     sed -i "s#<source bridge='.*'/>#<source dev='$BRNAME' mode='bridge'/>#" "$XML"
 fi
